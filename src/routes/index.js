@@ -4,6 +4,6 @@ const accountRoutes = require('./account.routes')
 
 const routes = Router()
 
-routes.use('account', accountRoutes)
+routes.use('/account', accountRoutes)
 
 module.exports = routes
