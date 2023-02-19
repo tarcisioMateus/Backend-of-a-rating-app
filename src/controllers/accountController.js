@@ -2,10 +2,10 @@ const knex = require('../database/knex')
 
 const appError = require('../utils/appError')
 
-const { hash } = require('bcryptjs')
+const { hash, compare } = require('bcryptjs')
 
 class accountController {
-    async signIn ( request, response ) {
+    async signUp ( request, response ) {
         const { name, email, password, admin_key } = request.body
 
         if (admin_key && admin_key !== 'admin_key123') {
@@ -22,6 +22,22 @@ class accountController {
         await knex('users').insert({ name, email, password: cryptedPassword, admin_key })
 
         return response.status(201).json()
+    }
+
+    async login ( request, response ) {
+        const { email, password } = request.body
+
+        const user = await knex('users').where({email}).first()
+        if (!user) {
+            throw new appError("There is no account attached to this email, please Sing Up 1st!")
+        }
+
+        const passwordCheck = await compare(password, user.password)
+        if (!passwordCheck) {
+            throw new appError("The email and password don't match!")
+        }
+
+        return response.json(user)
     }
 }
 
