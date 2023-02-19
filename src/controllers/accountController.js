@@ -4,7 +4,7 @@ const appError = require('../utils/appError')
 
 const { hash, compare } = require('bcryptjs')
 
-class accountController {
+class AccountController {
     async signUp ( request, response ) {
         const { name, email, password, admin_key } = request.body
 
@@ -41,4 +41,4 @@ class accountController {
     }
 }
 
-module.exports = accountController
+module.exports = AccountController
