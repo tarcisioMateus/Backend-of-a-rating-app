@@ -5,7 +5,7 @@ const accountController = new AccountController()
 
 const accountRoutes = Router()
 
-accountRoutes.post('/', accountController.signUp)
-accountRoutes.get('/', accountController.login)
+accountRoutes.post('/signup', accountController.signUp)
+accountRoutes.get('/login', accountController.login)
 
 module.exports = accountRoutes

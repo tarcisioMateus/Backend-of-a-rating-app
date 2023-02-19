@@ -1,13 +1,13 @@
 {
-  "name": "BackendRating",
+  "name": "backend_rating",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon ./src/server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Tarcísio Mateus",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -16,5 +16,8 @@
     "knex": "^2.4.2",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   }
 }
