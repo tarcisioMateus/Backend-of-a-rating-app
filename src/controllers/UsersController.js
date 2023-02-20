@@ -18,6 +18,20 @@ class UsersController {
         if (await updatePasswordCheck(currentPassword, newPassword, user)) {
             user.password = await hash( newPassword, 8 )
         }
+
+        user.name = name ? name : user.name
+
+        await knex('users').where({id}).update({ name: user.name, email: user.email, password: user.password, updated_at: knex.fn.now()})
+
+        return response.json()
+    }
+
+    async delete (request, response) {
+        const { id } = request.params
+
+        await knex('users').where({id}).delete()
+
+        return response.json()
     }
 }
 
