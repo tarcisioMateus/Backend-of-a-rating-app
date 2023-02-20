@@ -13,19 +13,13 @@ class AdminController {
 module.exports = AdminController
 
 function addAlbumInputValidation ( title, singer, genre, record_lable, release_year ) {
-    if (!title) {
-        throw new appError("You can NOT add an album without it's title!")
-    }
-    if (!singer) {
-        throw new appError("You can NOT add an album without it's singer!")
-    }
-    if (!genre) {
-        throw new appError("You can NOT add an album without it's genre!")
-    }
-    if (!record_lable) {
-        throw new appError("You can NOT add an album without it's record lable!")
-    }
-    if (!release_year) {
-        throw new appError("You can NOT add an album without it's release year!")
+
+    const input = [title, singer, genre, record_lable, release_year]
+    const type = ['title', 'singer', 'genre', 'record_lable', 'release_year']
+
+    for (let count = 0; count < 5; count++) {
+        if (!input[count]) {
+            throw new appError(`You can NOT add an album without it's ${type[count]}!`)
+        }
     }
 }
