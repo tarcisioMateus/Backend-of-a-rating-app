@@ -7,6 +7,18 @@ class AdminController {
         const { title, singer, genre, record_lable, release_year } = request.body
 
         addAlbumInputValidation ( title, singer, genre, record_lable, release_year )
+
+        await knex('albums').insert({ title, singer, genre, record_lable, release_year })
+
+        return response.json()
+    }
+
+    async deleteAlbum (request, response) {
+        const { album_id } = request.params
+
+        await knex('albums').where({id: album_id}).delete()
+
+        return response.json()
     }
 }
 
