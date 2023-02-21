@@ -8,6 +8,7 @@ class RatingsController {
         const { stars, review } = request.body
 
         createInputValidation (stars, review)
+        await createOneRatingPerUser (album_id, user_id)
 
         await knex('ratings').insert({ album_id, user_id, stars: Number(stars).toFixed(1), review })
 
@@ -27,5 +28,14 @@ function createInputValidation (stars, review) {
     }
     if (!review) {
         throw new appError('please, tell us what did you think of this album!')
+    }
+}
+
+async function createOneRatingPerUser (album_id, user_id) {
+    const userRatings = await knex('ratings').where({user_id})
+    const userRatedAlbum = userRatings.filter(rt => rt.album_id == album_id)
+
+    if (userRatedAlbum) {
+        throw new appError("You've already rated this album!")
     }
 }
