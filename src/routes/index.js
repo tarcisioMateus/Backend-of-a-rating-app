@@ -12,5 +12,6 @@ routes.use('/account', accountRoutes)
 routes.use('/users', usersRoutes)
 routes.use('/admin', adminRoutes)
 routes.use('/albums', albumsRoutes)
+routes.use('/ratings', ratingsRoutes)
 
 module.exports = routes

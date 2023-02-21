@@ -9,7 +9,7 @@ class RatingsController {
 
         createInputValidation (stars, review)
 
-        await knex('ratings').insert({ album_id, user_id, stars, review })
+        await knex('ratings').insert({ album_id, user_id, stars: Number(stars).toFixed(1), review })
 
         return response.status(201).json()
     }

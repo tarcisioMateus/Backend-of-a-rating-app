@@ -5,6 +5,6 @@ const ratingsController = new RatingsController()
 
 const ratingsRoutes = Router()
 
-ratingsRoutes.post('/:album_id/:user_id', ratingsController.create)
+ratingsRoutes.post('/create/:album_id/:user_id', ratingsController.create)
 
 module.exports = ratingsRoutes
