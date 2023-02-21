@@ -37,6 +37,14 @@ class AlbumsController {
             release_years
         })
     }
+
+    async show (request, response) {
+        const { id } = request.params
+
+        const album = await knex('albums').where({id}).first()
+
+        return response.json(album)
+    }
 }
 
 module.exports = AlbumsController

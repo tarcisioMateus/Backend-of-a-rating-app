@@ -6,5 +6,6 @@ const albumsController = new AlbumsController()
 const albumsRoutes = Router()
 
 albumsRoutes.get('/allTags', albumsController.listAllTags)
+albumsRoutes.get('/show/:id', albumsController.show)
 
 module.exports = albumsRoutes
