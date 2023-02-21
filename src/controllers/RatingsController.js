@@ -32,10 +32,10 @@ function createInputValidation (stars, review) {
 }
 
 async function createOneRatingPerUser (album_id, user_id) {
-    const userRatings = await knex('ratings').where({user_id})
-    const userRatedAlbum = userRatings.filter(rt => rt.album_id == album_id)
+    const userRatedAlbum = await knex('ratings').where({user_id, album_id})
 
-    if (userRatedAlbum) {
-        throw new appError("You've already rated this album!")
+    if (userRatedAlbum.length == 0) {
+        return
     }
+    throw new appError("You've already rated this album!")
 }
