@@ -8,8 +8,9 @@ class AdminController {
 
         addAlbumInputValidation ( title, singer, genre, record_lable, release_year )
 
-        await knex('albums').insert({ title, singer, genre, record_lable, release_year })
+        const album_id = await knex('albums').insert({ title, singer, genre, record_lable, release_year })
 
+        await knex('average_ratings').insert({album_id, rating: ''})
         return response.json()
     }
 

@@ -12,14 +12,18 @@ class RatingsController {
 
         await knex('ratings').insert({ album_id, user_id, stars: Number(stars).toFixed(1), review })
 
+        await updateAlbumAverageRating (album_id)
         return response.status(201).json()
     }
 
     async delete (request, response) {
         const { id } = request.params
 
+        const album_id = (await knex('ratings').where({id}).first()).album_id
+
         await knex('ratings').where({id}).delete()
 
+        await updateAlbumAverageRating (album_id)
         return response.json()
     }
 
@@ -28,6 +32,7 @@ class RatingsController {
         const { stars, review } = request.body
 
         const rating = await knex('ratings').where({id}).first()
+        const album_id = rating.album_id
 
         if (stars) {
             if (stars < 0 || stars > 5) {
@@ -39,6 +44,7 @@ class RatingsController {
 
         await knex('ratings').where({id}).update({ stars: rating.stars, review: rating.review, updated_at: knex.fn.now()})
 
+        await updateAlbumAverageRating (album_id)
         return response.json()
     }
 }
@@ -60,9 +66,19 @@ function createInputValidation (stars, review) {
 
 async function createOneRatingPerUser (album_id, user_id) {
     const userRatedAlbum = await knex('ratings').where({user_id, album_id}).first()
-
-    if (userRatedAlbum.length == 0) {
-        return
+    
+    if (userRatedAlbum) {
+        throw new appError("You've already rated this album!")
     }
-    throw new appError("You've already rated this album!")
+}
+
+async function updateAlbumAverageRating (album_id) {
+    const albumRatings = (await knex('ratings').where({album_id})).map(rating => Number(rating.stars))
+
+    let averageRating = ''
+    if (albumRatings.length > 0) {
+        averageRating = (albumRatings.reduce((a, b) => a + b)/ albumRatings.length).toFixed(1)
+    }
+
+    await knex('average_ratings').where({album_id}).update({album_id, rating: averageRating, updated_at: knex.fn.now()})
 }
