@@ -6,11 +6,11 @@ class AlbumsController {
     async listAllTags (request, response) {
         const albums = await knex('albums')
 
-        const singers = []
-        const genres = []
-        const record_lables = []
-        const release_years = []
-        for (const album of albums) {
+        let singers = []
+        let genres = []
+        let record_lables = []
+        let release_years = []
+        for (let album of albums) {
             if (!singers.includes(album.singer)) {
                 singers = [ ...singers, album.singer]
             }
@@ -24,6 +24,11 @@ class AlbumsController {
                 release_years = [ ...release_years, album.release_year]
             }
         }
+
+        singers.sort()
+        genres.sort()
+        record_lables.sort()
+        release_years.sort()
 
         return response.json({
             singers,
