@@ -8,6 +8,10 @@ class RatingsController {
         const { stars, review } = request.body
 
         createInputValidation (stars, review)
+
+        await knex('ratings').insert({ album_id, user_id, stars, review })
+
+        return response.status(201).json()
     }
 }
 

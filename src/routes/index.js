@@ -4,6 +4,7 @@ const accountRoutes = require('./account.routes')
 const usersRoutes = require('./users.routes')
 const adminRoutes = require('./admin.routes')
 const albumsRoutes = require('./albums.routes')
+const ratingsRoutes = require('./ratings.routes')
 
 const routes = Router()
 
