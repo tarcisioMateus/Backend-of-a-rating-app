@@ -45,6 +45,27 @@ class AlbumsController {
 
         return response.json(album)
     }
+
+    async index (request, response) {
+        const { singer, genre, record_lable, release_year } = request.body
+        
+        let albums = await knex('albums')
+
+        if (singer) {
+            albums = albums.filter(album => album.singer == singer)
+        }
+        if (genre) {
+            albums = albums.filter(album => album.genre == genre)
+        }
+        if (record_lable) {
+            albums = albums.filter(album => album.record_lable == record_lable)
+        }
+        if (release_year) {
+            albums = albums.filter(album => album.release_year == release_year)
+        }
+
+        return response.json(albums)
+    }
 }
 
 module.exports = AlbumsController
