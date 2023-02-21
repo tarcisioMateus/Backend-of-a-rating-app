@@ -1,7 +1,5 @@
 const knex = require('../database/knex')
 
-const appError = require('../utils/appError')
-
 class AlbumsController {
     async listAllTags (request, response) {
         const albums = await knex('albums')
