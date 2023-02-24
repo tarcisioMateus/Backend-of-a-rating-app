@@ -62,3 +62,12 @@ function activityAfterStartingDate (activityDate, startingDate) {
     }
     return true
 }
+
+function isTrackingActivityOfAlbum (albumsActivity, album_id) {
+    for (let activity of albumsActivity) {
+        if (activity.album_id == album_id){
+            return true
+        }
+    }
+    return false
+}
