@@ -9,10 +9,13 @@ class ControlController {
         if (Number(days) > 365) {
             throw new appError("You can't look beyond the previous 365 days!")
         }
-        const startingDate = getValidStartingDate (days)
-
+        
         const ratings = await knex('ratings')
-        let albumsActivity = []
+
+        const startingDate = getValidStartingDate (days)
+        const recentActivity = ratings.filter( rt => activityAfterStartingDate (rt.updated_at, startingDate))
+        
+        let albumsActivity, usersActivity
 
         
         
@@ -66,6 +69,15 @@ function activityAfterStartingDate (activityDate, startingDate) {
 function isTrackingActivityOfAlbum (albumsActivity, album_id) {
     for (let activity of albumsActivity) {
         if (activity.album_id == album_id){
+            return true
+        }
+    }
+    return false
+}
+
+function isTrackingActivityOfUser (usersActivity, user_id) {
+    for (let activity of usersActivity) {
+        if (activity.user_id == user_id){
             return true
         }
     }
