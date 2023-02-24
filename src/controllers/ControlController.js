@@ -12,6 +12,10 @@ class ControlController {
         const startingDate = getValidStartingDate (days)
 
         const ratings = await knex('ratings')
+        let albumsActivity = []
+
+        
+        
     
         
 
@@ -46,4 +50,15 @@ function getValidStartingDate (days) {
     }
 
     return [ startingYear, startingMonth, startingDay ]
+}
+
+function activityAfterStartingDate (activityDate, startingDate) {
+    const activityYMD = ( activityDate.split(' ')[0].split('-') ).map(tx => Number(tx))
+    
+    for (let i in startingDate) {
+        if ( activityYMD[i] < startingDate[i] ) {
+            return false
+        }
+    }
+    return true
 }
