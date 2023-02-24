@@ -5,6 +5,6 @@ const controlController = new ControlController()
 
 const controlRoutes = Router()
 
-controlRoutes.use('/listActivityDays', controlController.listActivityDays)
+controlRoutes.use('/activityDay', controlController.listActivityDays)
 
 module.exports = controlRoutes
