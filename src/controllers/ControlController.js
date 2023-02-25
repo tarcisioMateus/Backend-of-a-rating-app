@@ -19,13 +19,6 @@ class ControlController {
     
         return response.json(AlbumsUsersActivity)
     }
-
-    async listActivityFromPreviousHours (request, response) {
-        const { hours } = request.body
-        
-        const ratings = await knex('ratings')
-
-    }
 }
 
 module.exports = ControlController
