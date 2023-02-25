@@ -45,6 +45,14 @@ class ControlController {
 
         return response.json()
     }
+
+    async deleteUser (request, response) {
+        const { user_id } = request.body
+
+        await knex('users').where({id: user_id}).delete()
+
+        return response.json()
+    }
 }
 
 module.exports = ControlController
