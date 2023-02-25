@@ -19,6 +19,12 @@ class ControlController {
     
         return response.json(AlbumsUsersActivity)
     }
+
+    async deleteRatingsBelow (request, response) {
+        const { album_id, singer, record_lable, threshold } = request.body
+
+        
+    }
 }
 
 module.exports = ControlController
