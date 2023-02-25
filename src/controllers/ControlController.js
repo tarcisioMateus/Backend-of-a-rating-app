@@ -41,6 +41,7 @@ class ControlController {
 
         await deleteRatingsSinceWhereAlbumId (album_id, startingDate)
         await deleteRatingsSinceWhereSinger (singer, startingDate)
+        await deleteRatingsSinceWhereRecordLable (record_lable, startingDate)
     }
 }
 
@@ -188,6 +189,16 @@ async function deleteRatingsSinceWhereSinger (singer, startingDate) {
     if (singer) {
         const singerRatings = await knex ('ratings').where({singer})
         for (let rt of singerRatings) {
+            if (activityAfterStartingDate (rt.updated_at, startingDate)) {
+                await knex ('ratings').where({id: rt.id}).delete()
+            }
+        }
+    }
+}
+async function deleteRatingsSinceWhereRecordLable (record_lable, startingDate) {
+    if (record_lable) {
+        const rlRatings = await knex ('ratings').where({record_lable})
+        for (let rt of rlRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
