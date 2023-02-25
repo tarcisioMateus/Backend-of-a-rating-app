@@ -23,7 +23,7 @@ class ControlController {
     async deleteRatingsBelow (request, response) {
         const { album_id, singer, record_lable, threshold } = request.body
 
-        
+        await deleteRatingsBelowWhereAlbumId (album_id, threshold)
     }
 }
 
@@ -120,4 +120,16 @@ function isTrackingActivityOfUser (usersActivity, user_id) {
         }
     }
     return false
+}
+
+
+async function deleteRatingsBelowWhereAlbumId (album_id, threshold) {
+    if (album_id) {
+        const albumsRatings = await knex ('ratings').where({album_id})
+        for (let rt of albumsRatings) {
+            if ( rt.stars <= threshold) {
+                await knex ('ratings').where({id: rt.id}).delete()
+            }
+        }
+    }
 }
