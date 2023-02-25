@@ -26,6 +26,12 @@ class ControlController {
         await deleteRatingsBelowWhereAlbumId (album_id, threshold)
         await deleteRatingsBelowWhereSinger (singer, threshold)
         await deleteRatingsBelowWhereRecordLable (record_lable, threshold)
+
+        return response.json()
+    }
+
+    async deleteRatingsSince (request, response) {
+        const { album_id, singer, record_lable, date } = request.body
     }
 }
 
