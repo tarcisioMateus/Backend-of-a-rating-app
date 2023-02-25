@@ -15,14 +15,9 @@ class ControlController {
         const startingDate = getValidStartingDate (days)
         const recentActivity = ratings.filter( rt => activityAfterStartingDate (rt.updated_at, startingDate))
         
-        let albumsActivity, usersActivity
-
-        
-        
+        const AlbumsUsersActivity = getAlbumAndUserActivity (recentActivity)
     
-        
-
-        return response.json()
+        return response.json(AlbumsUsersActivity)
     }
 }
 
@@ -58,12 +53,49 @@ function getValidStartingDate (days) {
 function activityAfterStartingDate (activityDate, startingDate) {
     const activityYMD = ( activityDate.split(' ')[0].split('-') ).map(tx => Number(tx))
     
-    for (let i in startingDate) {
+    for (let i = 0; i < 3; i++) {
         if ( activityYMD[i] < startingDate[i] ) {
             return false
         }
+        if ( activityYMD[i] > startingDate[i] ) {
+            return true
+        }
     }
     return true
+}
+
+function getAlbumAndUserActivity (recentActivity) {
+    let albumsActivity = []
+    let usersActivity = []
+
+    for (let rt of recentActivity) {
+        if (isTrackingActivityOfAlbum(albumsActivity, rt.album_id)) {
+            for (let i in albumsActivity) {
+                if (albumsActivity[i].album_id == rt.album_id) {
+                    albumsActivity[i].activity = albumsActivity[i].activity + 1
+                }
+            }
+        } else {
+            albumsActivity = [...albumsActivity, {
+                album_id: rt.album_id,
+                activity: 1
+            }]
+        }
+        
+        if (isTrackingActivityOfUser(usersActivity, rt.user_id)) {
+            for (let i in usersActivity) {
+                if (usersActivity[i].user_id == rt.user_id) {
+                    usersActivity[i].activity = usersActivity[i].activity + 1
+                }
+            }
+        } else {
+            usersActivity = [...usersActivity, {
+                user_id: rt.user_id,
+                activity: 1
+            }]
+        }
+    }
+    return [{albumsActivity}, {usersActivity}]
 }
 
 function isTrackingActivityOfAlbum (albumsActivity, album_id) {
