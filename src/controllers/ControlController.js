@@ -31,7 +31,15 @@ class ControlController {
     }
 
     async deleteRatingsSince (request, response) {
-        const { album_id, singer, record_lable, date } = request.body
+        const { album_id, singer, record_lable, days } = request.body
+
+        if (Number(days) > 365) {
+            throw new appError("You can't look beyond the previous 365 days!")
+        }
+
+        const startingDate = getValidStartingDate (days)
+
+        await deleteRatingsSinceWhereAlbumId (album_id, startingDate)
     }
 }
 
@@ -131,6 +139,7 @@ function isTrackingActivityOfUser (usersActivity, user_id) {
 }
 
 
+
 async function deleteRatingsBelowWhereAlbumId (album_id, threshold) {
     if (album_id) {
         const albumsRatings = await knex ('ratings').where({album_id})
@@ -158,6 +167,19 @@ async function deleteRatingsBelowWhereRecordLable (record_lable, threshold) {
         const rlRatings = await knex ('ratings').where({record_lable})
         for (let rt of rlRatings) {
             if ( rt.stars <= threshold) {
+                await knex ('ratings').where({id: rt.id}).delete()
+            }
+        }
+    }
+}
+
+
+
+async function deleteRatingsSinceWhereAlbumId (album_id, startingDate) {
+    if (album_id) {
+        const albumsRatings = await knex ('ratings').where({album_id})
+        for (let rt of albumsRatings) {
+            if (activityAfterStartingDate (rt.updated_at, startingDate)) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
