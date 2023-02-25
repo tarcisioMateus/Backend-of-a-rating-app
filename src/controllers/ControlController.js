@@ -3,7 +3,7 @@ const knex = require('../database/knex')
 const appError = require('../utils/appError')
 
 class ControlController {
-    async listActivityDays (request, response) {
+    async listActivityFromPreviousDays (request, response) {
         const { days } = request.body
 
         if (Number(days) > 365) {
