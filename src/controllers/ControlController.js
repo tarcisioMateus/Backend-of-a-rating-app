@@ -22,11 +22,16 @@ class ControlController {
 
     async deleteRatingsBelow (request, response) {
         const { album_id, singer, record_lable, threshold } = request.body
+        const { admin_id } = request.params
 
-        await deleteRatingsBelowAlbumId (album_id, threshold)
-        await deleteRatingsBelowSinger (singer, threshold)
-        await deleteRatingsBelowRecordLable (record_lable, threshold)
+        const deletedDataAI = await deleteRatingsBelowAlbumId (album_id, threshold)
+        const deletedDataS = await deleteRatingsBelowSinger (singer, threshold)
+        const deletedDataRL = await deleteRatingsBelowRecordLable (record_lable, threshold)
 
+        const deletedData = { "AI": deletedDataAI, "S": deletedDataS, "RL": deletedDataRL }
+        const filter = { album_id, singer, record_lable }
+        createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData)
+        
         return response.json()
     }
 
@@ -153,65 +158,103 @@ function isTrackingActivityOfUser (usersActivity, user_id) {
 
 
 async function deleteRatingsBelowAlbumId (album_id, threshold) {
+    let deletedData = []
     if (album_id) {
         const albumsRatings = await knex ('ratings').where({album_id})
         for (let rt of albumsRatings) {
             if ( rt.stars <= threshold) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
     }
 }
 async function deleteRatingsBelowSinger (singer, threshold) {
+    let deletedData = []
     if (singer) {
         const singerRatings = await knex ('ratings').where({singer})
         for (let rt of singerRatings) {
             if ( rt.stars <= threshold) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
     }
 }
 async function deleteRatingsBelowRecordLable (record_lable, threshold) {
+    let deletedData = []
     if (record_lable) {
         const rlRatings = await knex ('ratings').where({record_lable})
         for (let rt of rlRatings) {
             if ( rt.stars <= threshold) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
     }
 }
 
 
 
 async function deleteRatingsSinceAlbumId (album_id, startingDate) {
+    let deletedData = []
     if (album_id) {
         const albumsRatings = await knex ('ratings').where({album_id})
         for (let rt of albumsRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
     }
 }
 async function deleteRatingsSinceSinger (singer, startingDate) {
+    let deletedData = []
     if (singer) {
         const singerRatings = await knex ('ratings').where({singer})
         for (let rt of singerRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
     }
 }
 async function deleteRatingsSinceRecordLable (record_lable, startingDate) {
+    let deletedData = []
     if (record_lable) {
         const rlRatings = await knex ('ratings').where({record_lable})
         for (let rt of rlRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
+                deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        return deletedData
+    }
+}
+
+
+
+async function createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData) {
+    if (deletedData.AI) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.AI, type: `deleteRatingsBelow: ${threshold}, fromAlbumId: ${filter.album_id}`
+        })
+    }
+    if (deletedData.S) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.S, type: `deleteRatingsBelow: ${threshold}, fromSinger: ${filter.singer}`
+        })
+    }
+    if (deletedData.RL) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.RL, type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${filter.record_lable}`
+        })
     }
 }
