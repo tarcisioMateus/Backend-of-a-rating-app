@@ -48,6 +48,7 @@ class AlbumsController {
         const { singer, genre, record_lable, release_year } = request.body
         
         let albums = await knex('albums')
+        const average_ratings = await knex('average_ratings')
 
         if (singer) {
             albums = albums.filter(album => album.singer == singer)
@@ -61,9 +62,22 @@ class AlbumsController {
         if (release_year) {
             albums = albums.filter(album => album.release_year == release_year)
         }
+        albums = getAlbumsWithAverageRatings (albums, average_ratings)
 
         return response.json(albums)
     }
 }
 
 module.exports = AlbumsController
+
+function getAlbumsWithAverageRatings (albums, average_ratings) {
+    const albumsWithAvRt = albums.map( album => {
+        const albumRt = average_ratings.filter( rt => rt.album_id == album.id)
+        return {
+            album,
+            average_rating: albumRt[0].rating,
+            updated_at: albumRt[0].updated_at
+        }
+    })
+    return albumsWithAvRt
+}
