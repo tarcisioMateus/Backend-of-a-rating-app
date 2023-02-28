@@ -251,17 +251,17 @@ async function deleteRatingsSinceRecordLable (record_lable, startingDate) {
 async function createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData) {
     if (deletedData.AI) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.AI, type: `deleteRatingsBelow: ${threshold}, fromAlbumId: ${filter.album_id}`
+            user_id: admin_id, data: JSON.stringify(deletedData.AI), type: `deleteRatingsBelow: ${threshold}, fromAlbumId: ${filter.album_id}`
         })
     }
     if (deletedData.S) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.S, type: `deleteRatingsBelow: ${threshold}, fromSinger: ${filter.singer}`
+            user_id: admin_id, data: JSON.stringify(deletedData.S), type: `deleteRatingsBelow: ${threshold}, fromSinger: ${filter.singer}`
         })
     }
     if (deletedData.RL) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.RL, type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${filter.record_lable}`
+            user_id: admin_id, data: JSON.stringify(deletedData.RL), type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${filter.record_lable}`
         })
     }
 }
@@ -269,17 +269,17 @@ async function createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, 
 async function createHistoryOfDeletedRatingsSince (admin_id, days, filter, deletedData) {
     if (deletedData.AI) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.AI, type: `deleteRatingsSince: ${days}, fromAlbumId: ${filter.album_id}`
+            user_id: admin_id, data: JSON.stringify(deletedData.AI), type: `deleteRatingsSince: ${days}, fromAlbumId: ${filter.album_id}`
         })
     }
     if (deletedData.S) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.S, type: `deleteRatingsSince: ${days}, fromSinger: ${filter.singer}`
+            user_id: admin_id, data: JSON.stringify(deletedData.S), type: `deleteRatingsSince: ${days}, fromSinger: ${filter.singer}`
         })
     }
     if (deletedData.RL) {
         await knex('history').insert({
-            user_id: admin_id, data: deletedData.RL, type: `deleteRatingsSince: ${days}, fromRecordLable: ${filter.record_lable}`
+            user_id: admin_id, data: JSON.stringify(deletedData.RL), type: `deleteRatingsSince: ${days}, fromRecordLable: ${filter.record_lable}`
         })
     }
 }
@@ -290,6 +290,6 @@ async function createHistoryOfDeletedUser ( user_id, admin_id ) {
 
     const userRatings = await knex('ratings').where({user_id})
 
-    const data = {user, userRatings}
+    const data = JSON.stringify({user, userRatings})
     await knex('history').insert({ user_id: admin_id, data, type: `deleteUser: ${user_id}` })
 }
