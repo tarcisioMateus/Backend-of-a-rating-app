@@ -30,13 +30,14 @@ class ControlController {
 
         const deletedData = { "AI": deletedDataAI, "S": deletedDataS, "RL": deletedDataRL }
         const filter = { album_id, singer, record_lable }
-        createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData)
-        
+        await createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData)
+
         return response.json()
     }
 
     async deleteRatingsSince (request, response) {
         const { album_id, singer, record_lable, days } = request.body
+        const { admin_id } = request.params
 
         if (Number(days) > 365) {
             throw new appError("You can't look beyond the previous 365 days!")
@@ -44,9 +45,13 @@ class ControlController {
 
         const startingDate = getValidStartingDate (days)
 
-        await deleteRatingsSinceAlbumId (album_id, startingDate)
-        await deleteRatingsSinceSinger (singer, startingDate)
-        await deleteRatingsSinceRecordLable (record_lable, startingDate)
+        const deletedDataAI = await deleteRatingsSinceAlbumId (album_id, startingDate)
+        const deletedDataS = await deleteRatingsSinceSinger (singer, startingDate)
+        const deletedDataRL = await deleteRatingsSinceRecordLable (record_lable, startingDate)
+
+        const deletedData = { "AI": deletedDataAI, "S": deletedDataS, "RL": deletedDataRL }
+        const filter = { album_id, singer, record_lable }
+        await createHistoryOfDeletedRatingsSince (admin_id, days, filter, deletedData)
 
         return response.json()
     }
@@ -255,6 +260,24 @@ async function createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, 
     if (deletedData.RL) {
         await knex('history').insert({
             user_id: admin_id, data: deletedData.RL, type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${filter.record_lable}`
+        })
+    }
+}
+
+async function createHistoryOfDeletedRatingsSince (admin_id, days, filter, deletedData) {
+    if (deletedData.AI) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.AI, type: `deleteRatingsSince: ${days}, fromAlbumId: ${filter.album_id}`
+        })
+    }
+    if (deletedData.S) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.S, type: `deleteRatingsSince: ${days}, fromSinger: ${filter.singer}`
+        })
+    }
+    if (deletedData.RL) {
+        await knex('history').insert({
+            user_id: admin_id, data: deletedData.RL, type: `deleteRatingsSince: ${days}, fromRecordLable: ${filter.record_lable}`
         })
     }
 }
