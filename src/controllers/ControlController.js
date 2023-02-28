@@ -58,7 +58,9 @@ class ControlController {
 
     async deleteUser (request, response) {
         const { user_id } = request.body
+        const { admin_id } = request.params
 
+        await createHistoryOfDeletedUser ( user_id, admin_id )
         await knex('users').where({id: user_id}).delete()
 
         return response.json()
@@ -280,4 +282,14 @@ async function createHistoryOfDeletedRatingsSince (admin_id, days, filter, delet
             user_id: admin_id, data: deletedData.RL, type: `deleteRatingsSince: ${days}, fromRecordLable: ${filter.record_lable}`
         })
     }
+}
+
+
+async function createHistoryOfDeletedUser ( user_id, admin_id ) {
+    const user = await knex('users').where({id: user_id}).first()
+
+    const userRatings = await knex('ratings').where({user_id})
+
+    const data = {user, userRatings}
+    await knex('history').insert({ user_id: admin_id, data, type: `deleteUser: ${user_id}` })
 }
