@@ -40,8 +40,10 @@ class AlbumsController {
         const { id } = request.params
 
         const album = await knex('albums').where({id}).first()
+        const average_rating = await knex('average_ratings').select(['rating', 'updated_at']).where({album_id: id}).first()
+        const ratings = await showAlbumWithItsRatings (album)
 
-        return response.json(album)
+        return response.json({album, average_rating, ratings})
     }
 
     async index (request, response) {
@@ -80,4 +82,20 @@ function indexWithAverageRatings (albums, average_ratings) {
         }
     })
     return albumsWithAvRt
+}
+
+async function showAlbumWithItsRatings (album) {
+
+    const ratings = await knex('ratings').select([
+        'ratings.id',
+        'users.name',
+        'ratings.stars',
+        'ratings.review',
+        'ratings.updated_at',
+    ]).where('ratings.album_id', album.id)
+    .innerJoin('users', 'users.id', 'ratings.user_id')
+    .orderBy('ratings.updated_at')
+
+    ratings.reverse()
+    return ratings
 }
