@@ -62,7 +62,7 @@ class AlbumsController {
         if (release_year) {
             albums = albums.filter(album => album.release_year == release_year)
         }
-        albums = getAlbumsWithAverageRatings (albums, average_ratings)
+        albums = indexWithAverageRatings (albums, average_ratings)
 
         return response.json(albums)
     }
@@ -70,7 +70,7 @@ class AlbumsController {
 
 module.exports = AlbumsController
 
-function getAlbumsWithAverageRatings (albums, average_ratings) {
+function indexWithAverageRatings (albums, average_ratings) {
     const albumsWithAvRt = albums.map( album => {
         const albumRt = average_ratings.filter( rt => rt.album_id == album.id)
         return {
