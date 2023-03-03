@@ -42,11 +42,15 @@ class HistoryController {
     async undo (request, response) {
         const { id, admin_id } = request.params
 
-        const data = await knex('history').where({id}).first()
+        const history = await knex('history').where({id}).first()
 
-        if (data.type.includes('Ratings')) {
-            await reUploadDeletedRatings (data)
+        if (history.type.includes('Ratings')) {
+            await reUploadDeletedRatings (JSON.parse(history.data))
         }
+        if (history.type.includes('Users')) {
+            await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
+        }
+
     }
 
         
@@ -67,6 +71,26 @@ async function reUploadDeletedRatings (data) {
                 await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
                 return
             }
+        }
+        cantUploadRatings = [...cantUploadRatings, rt]
+    })
+    return cantUploadRatings
+}
+
+async function reUploadDeletedUserWithItsRatings (data) {
+    const {id, admin_key, name, email, password, avatar, created_at, updated_at} = data.user
+    
+    await knex('users').insert({id, admin_key, name, email, password, avatar, created_at, updated_at})
+    
+    const albums = await knex('albums')
+    let cantUploadRatings = []
+    
+    data.userRatings.forEach(rt => {
+        if(albums.filter(album => album.id == rt.album_id).length > 0){
+            const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
+                
+            await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+            return
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     })
