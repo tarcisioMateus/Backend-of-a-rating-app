@@ -43,17 +43,20 @@ class HistoryController {
         const { id, admin_id } = request.params
 
         const history = await knex('history').where({id}).first()
+        let cantUploadRatings
 
         if (history.type.includes('Ratings')) {
-            await reUploadDeletedRatings (JSON.parse(history.data))
+            cantUploadRatings = await reUploadDeletedRatings (JSON.parse(history.data))
         }
         if (history.type.includes('Users')) {
-            await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
+            cantUploadRatings = await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
         }
+        if (history.type.includes('History')) return
 
-    }
+        await knex('history').insert({ user_id: admin_id, data: '', type: `reuploadHistory: ${id}` })
 
-        
+        return response.json(cantUploadRatings)
+    } 
 }
 
 module.exports = HistoryController
