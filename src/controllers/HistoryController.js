@@ -43,9 +43,32 @@ class HistoryController {
         const { id, admin_id } = request.params
 
         const data = await knex('history').where({id}).first()
+
+        if (data.type.includes('Ratings')) {
+            await reUploadDeletedRatings (data)
+        }
     }
 
         
 }
 
 module.exports = HistoryController
+
+async function reUploadDeletedRatings (data) {
+    const users = await knex('users')
+    const albums = await knex('albums')
+    let cantUploadRatings = []
+    
+    data.forEach(rt => {
+        if (users.filter(user => user.id == rt.user_id).length > 0){
+            if(albums.filter(album => album.id == rt.album_id).length > 0){
+                const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
+                
+                await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+                return
+            }
+        }
+        cantUploadRatings = [...cantUploadRatings, rt]
+    })
+    return cantUploadRatings
+}
