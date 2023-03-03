@@ -30,6 +30,14 @@ class HistoryController {
 
         return response.json(history)
     }
+
+    async show (request, response) {
+        const { id } = request.params
+
+        const history = await knex('history').where({id}).first()
+
+        return response.json(history)
+    }
 }
 
 module.exports = HistoryController
