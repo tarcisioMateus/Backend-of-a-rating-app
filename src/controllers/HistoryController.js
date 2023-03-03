@@ -38,6 +38,14 @@ class HistoryController {
 
         return response.json(history)
     }
+
+    async undo (request, response) {
+        const { id, admin_id } = request.params
+
+        const data = await knex('history').where({id}).first()
+    }
+
+        
 }
 
 module.exports = HistoryController
