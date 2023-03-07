@@ -53,10 +53,28 @@ class HistoryController {
         }
         if (history.type.includes('History')) return
 
-        await knex('history').insert({ user_id: admin_id, data: '', type: `reuploadHistory: ${id}` })
+        await knex('history').insert({ user_id: admin_id, data: '', type: `reUploadHistory: ${id}` })
 
         return response.json(cantUploadRatings)
-    } 
+    }
+    
+    async delete (request, response) {
+        const { admin_id } = request.params
+
+        const deleteHistoryRequest = await knex('history').where({user_id: admin_id}).where({type: 'deleteHistory'}).first()
+
+        if (!deleteHistoryRequest) {
+            await knex('history').insert({ user_id: admin_id, data: '', type: 'deleteHistory' })
+        }
+
+        const allAdmin = await knex('users').where({admin_key: 'admin_key123'})
+        const allDeleteHistoryRequest = await knex('history').where({type: 'deleteHistory'})
+
+        if (allAdmin.length == allDeleteHistoryRequest.length) {
+            await knex('history').delete()
+        }
+        return response.json()
+    }
 }
 
 module.exports = HistoryController
