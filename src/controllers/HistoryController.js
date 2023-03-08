@@ -112,6 +112,7 @@ async function reUploadDeletedUserWithItsRatings (data) {
     await knex('users').insert({id, admin_key, name, email, password, avatar, created_at, updated_at})
     
     const albums = await knex('albums')
+    let updatedAlbums = []
     let cantUploadRatings = []
     
     data.userRatings.forEach(rt => {
@@ -119,9 +120,14 @@ async function reUploadDeletedUserWithItsRatings (data) {
             const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
                 
             await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+
+            if (!updatedAlbums.includes(album_id)) {
+                updatedAlbums = [...updatedAlbums, album_id]
+            }
             return
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     })
+    updatedAlbums.forEach(album_id => await updateAlbumAverageRating (album_id) )
     return cantUploadRatings
 }
