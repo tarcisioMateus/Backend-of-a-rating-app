@@ -62,9 +62,10 @@ class ControlController {
         const { user_id } = request.body
         const { admin_id } = request.params
 
-        await createHistoryOfDeletedUser ( user_id, admin_id )
+        const albumsRatedByUser = await createHistoryOfDeletedUser ( user_id, admin_id )
         await knex('users').where({id: user_id}).delete()
 
+        albumsRatedByUser.forEach(album_id => await updateAlbumAverageRating (album_id))
         return response.json()
     }
 }
@@ -245,6 +246,7 @@ async function deleteRatingsSinceAlbumId (album_id, startingDate) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        await updateAlbumAverageRating(album_id)
         return deletedData
     }
 }
@@ -325,4 +327,7 @@ async function createHistoryOfDeletedUser ( user_id, admin_id ) {
 
     const data = JSON.stringify({user, userRatings})
     await knex('history').insert({ user_id: admin_id, data, type: `deleteUser: ${user_id}` })
+
+    const albumsRatedByUser = userRatings.map(rt => rt.album_id)
+    return albumsRatedByUser
 }
