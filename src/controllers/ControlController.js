@@ -2,6 +2,8 @@ const knex = require('../database/knex')
 
 const appError = require('../utils/appError')
 
+const updateAlbumAverageRating = require('./global_function/updateAlbumAverageRating')
+
 class ControlController {
     async listActivityFromPreviousDays (request, response) {
         const { days } = request.body
@@ -16,7 +18,7 @@ class ControlController {
         const recentActivity = ratings.filter( rt => activityAfterStartingDate (rt.updated_at, startingDate))
         
         const AlbumsUsersActivity = getAlbumAndUserActivity (recentActivity)
-    
+        
         return response.json(AlbumsUsersActivity)
     }
 
@@ -74,9 +76,9 @@ function getValidStartingDate (days) {
     const today = ( new Date().toISOString().split('T') )[0]
     const YMD = (today.split('-')).map(tx => Number(tx))
 
-    const monthsPrior = Math.floor(days/30)
+    let monthsPrior = Math.floor(days/30)
     const daysPrior = days % 30
-
+    
     let startingDay, startingMonth, startingYear
 
     if ( (YMD[2] - daysPrior) <= 0 ){
@@ -174,6 +176,7 @@ async function deleteRatingsBelowAlbumId (album_id, threshold) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        await updateAlbumAverageRating(album_id)
         return deletedData
     }
 }
