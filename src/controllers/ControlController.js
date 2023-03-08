@@ -176,6 +176,17 @@ async function getSingerRatings (singer) {
     }
     return singerRatings
 }
+async function getRecordLableRatings (record_lable) {
+    const rlAlbums = await knex('albums').where({record_lable})
+    let rlRatings = []
+    
+    for (let album of rlAlbums) {
+        const ratings = await knex('ratings').where({album_id: album.id})
+        rlRatings = [...rlRatings, ...ratings]
+    }
+    return rlRatings
+}
+
 
 async function deleteRatingsBelowAlbumId (album_id, threshold) {
     let deletedData = []
@@ -209,13 +220,15 @@ async function deleteRatingsBelowSinger (singer, threshold) {
 async function deleteRatingsBelowRecordLable (record_lable, threshold) {
     let deletedData = []
     if (record_lable) {
-        const rlRatings = await knex ('ratings').where({record_lable})
+        const rlRatings = await getRecordLableRatings (record_lable)
         for (let rt of rlRatings) {
             if ( rt.stars <= threshold) {
                 deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        const rlAlbums = await knex('albums').where({record_lable})
+        rlAlbums.forEach(album => await updateAlbumAverageRating (album.id))
         return deletedData
     }
 }
@@ -253,13 +266,15 @@ async function deleteRatingsSinceSinger (singer, startingDate) {
 async function deleteRatingsSinceRecordLable (record_lable, startingDate) {
     let deletedData = []
     if (record_lable) {
-        const rlRatings = await knex ('ratings').where({record_lable})
+        const rlRatings = await getRecordLableRatings (record_lable)
         for (let rt of rlRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
                 deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        const rlAlbums = await knex('albums').where({record_lable})
+        rlAlbums.forEach(album => await updateAlbumAverageRating (album.id))
         return deletedData
     }
 }
