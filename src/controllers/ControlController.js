@@ -166,6 +166,17 @@ function isTrackingActivityOfUser (usersActivity, user_id) {
 
 
 
+async function getSingerRatings (singer) {
+    const singerAlbums = await knex('albums').where({singer})
+    let singerRatings = []
+    
+    for (let album of singerAlbums) {
+        const ratings = await knex('ratings').where({album_id: album.id})
+        singerRatings = [...singerRatings, ...ratings]
+    }
+    return singerRatings
+}
+
 async function deleteRatingsBelowAlbumId (album_id, threshold) {
     let deletedData = []
     if (album_id) {
@@ -183,13 +194,15 @@ async function deleteRatingsBelowAlbumId (album_id, threshold) {
 async function deleteRatingsBelowSinger (singer, threshold) {
     let deletedData = []
     if (singer) {
-        const singerRatings = await knex ('ratings').where({singer})
+        const singerRatings = await getSingerRatings(singer)
         for (let rt of singerRatings) {
             if ( rt.stars <= threshold) {
                 deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        const singerAlbums = await knex('albums').where({singer})
+        singerAlbums.forEach(album => await updateAlbumAverageRating (album.id))
         return deletedData
     }
 }
@@ -225,13 +238,15 @@ async function deleteRatingsSinceAlbumId (album_id, startingDate) {
 async function deleteRatingsSinceSinger (singer, startingDate) {
     let deletedData = []
     if (singer) {
-        const singerRatings = await knex ('ratings').where({singer})
+        const singerRatings = await getSingerRatings(singer)
         for (let rt of singerRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
                 deletedData = [...deletedData, rt]
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
+        const singerAlbums = await knex('albums').where({singer})
+        singerAlbums.forEach(album => await updateAlbumAverageRating (album.id))
         return deletedData
     }
 }
