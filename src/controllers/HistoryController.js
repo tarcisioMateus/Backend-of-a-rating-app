@@ -2,6 +2,8 @@ const knex = require('../database/knex')
 
 const appError = require('../utils/appError')
 
+const updateAlbumAverageRating = require('./global_function/updateAlbumAverageRating')
+
 class HistoryController {
     async index (request, response) {
         const { type, who } = request.body
@@ -82,6 +84,7 @@ module.exports = HistoryController
 async function reUploadDeletedRatings (data) {
     const users = await knex('users')
     const albums = await knex('albums')
+    let updatedAlbums = []
     let cantUploadRatings = []
     
     data.forEach(rt => {
@@ -90,11 +93,16 @@ async function reUploadDeletedRatings (data) {
                 const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
                 
                 await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+
+                if (!updatedAlbums.includes(album_id)) {
+                    updatedAlbums = [...updatedAlbums, album_id]
+                }
                 return
             }
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     })
+    updatedAlbums.forEach(album_id => await updateAlbumAverageRating (album_id) )
     return cantUploadRatings
 }
 
