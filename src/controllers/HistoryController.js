@@ -1,6 +1,7 @@
 const knex = require('../database/knex')
 
 const appError = require('../utils/appError')
+const asyncForEach = require('../utils/asyncForEach')
 
 const updateAlbumAverageRating = require('./global_function/updateAlbumAverageRating')
 
@@ -102,7 +103,7 @@ async function reUploadDeletedRatings (data) {
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     })
-    updatedAlbums.forEach(album_id => await updateAlbumAverageRating (album_id) )
+    await asyncForEach(updatedAlbums, updateAlbumAverageRating)
     return cantUploadRatings
 }
 
@@ -128,6 +129,6 @@ async function reUploadDeletedUserWithItsRatings (data) {
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     })
-    updatedAlbums.forEach(album_id => await updateAlbumAverageRating (album_id) )
+    await asyncForEach(updatedAlbums, updateAlbumAverageRating)
     return cantUploadRatings
 }

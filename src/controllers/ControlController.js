@@ -1,6 +1,7 @@
 const knex = require('../database/knex')
 
 const appError = require('../utils/appError')
+const asyncForEach = require('../utils/asyncForEach')
 
 const updateAlbumAverageRating = require('./global_function/updateAlbumAverageRating')
 
@@ -65,7 +66,7 @@ class ControlController {
         const albumsRatedByUser = await createHistoryOfDeletedUser ( user_id, admin_id )
         await knex('users').where({id: user_id}).delete()
 
-        albumsRatedByUser.forEach(album_id => await updateAlbumAverageRating (album_id))
+        await asyncForEach(albumsRatedByUser, updateAlbumAverageRating)
         return response.json()
     }
 }
@@ -213,8 +214,9 @@ async function deleteRatingsBelowSinger (singer, threshold) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
-        const singerAlbums = await knex('albums').where({singer})
-        singerAlbums.forEach(album => await updateAlbumAverageRating (album.id))
+        const singerAlbums = (await knex('albums').where({singer})).map(album => album.id)
+        await asyncForEach(singerAlbums, updateAlbumAverageRating)
+
         return deletedData
     }
 }
@@ -228,8 +230,9 @@ async function deleteRatingsBelowRecordLable (record_lable, threshold) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
-        const rlAlbums = await knex('albums').where({record_lable})
-        rlAlbums.forEach(album => await updateAlbumAverageRating (album.id))
+        const rlAlbums = (await knex('albums').where({record_lable})).map(album => album.id)
+        await asyncForEach(rlAlbums, updateAlbumAverageRating)
+
         return deletedData
     }
 }
@@ -260,8 +263,9 @@ async function deleteRatingsSinceSinger (singer, startingDate) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
-        const singerAlbums = await knex('albums').where({singer})
-        singerAlbums.forEach(album => await updateAlbumAverageRating (album.id))
+        const singerAlbums = (await knex('albums').where({singer})).map(album => album.id)
+        await asyncForEach(singerAlbums, updateAlbumAverageRating)
+        
         return deletedData
     }
 }
@@ -275,8 +279,9 @@ async function deleteRatingsSinceRecordLable (record_lable, startingDate) {
                 await knex ('ratings').where({id: rt.id}).delete()
             }
         }
-        const rlAlbums = await knex('albums').where({record_lable})
-        rlAlbums.forEach(album => await updateAlbumAverageRating (album.id))
+        const rlAlbums = (await knex('albums').where({record_lable})).map(album => album.id)
+        await asyncForEach(rlAlbums, updateAlbumAverageRating)
+
         return deletedData
     }
 }
