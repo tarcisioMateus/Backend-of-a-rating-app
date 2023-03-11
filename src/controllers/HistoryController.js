@@ -88,7 +88,7 @@ async function reUploadDeletedRatings (data) {
     let updatedAlbums = []
     let cantUploadRatings = []
     
-    data.forEach(rt => {
+    for (let rt of data){
         if (users.filter(user => user.id == rt.user_id).length > 0){
             if(albums.filter(album => album.id == rt.album_id).length > 0){
                 const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
@@ -102,7 +102,7 @@ async function reUploadDeletedRatings (data) {
             }
         }
         cantUploadRatings = [...cantUploadRatings, rt]
-    })
+    }
     await asyncForEach(updatedAlbums, updateAlbumAverageRating)
     return cantUploadRatings
 }
@@ -116,7 +116,7 @@ async function reUploadDeletedUserWithItsRatings (data) {
     let updatedAlbums = []
     let cantUploadRatings = []
     
-    data.userRatings.forEach(rt => {
+    for (let rt of data.userRatings){
         if(albums.filter(album => album.id == rt.album_id).length > 0){
             const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
                 
@@ -128,7 +128,7 @@ async function reUploadDeletedUserWithItsRatings (data) {
             return
         }
         cantUploadRatings = [...cantUploadRatings, rt]
-    })
+    }
     await asyncForEach(updatedAlbums, updateAlbumAverageRating)
     return cantUploadRatings
 }
