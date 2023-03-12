@@ -8,6 +8,9 @@ class AccountController {
     async signUp ( request, response ) {
         const { name, email, password, admin_key } = request.body
 
+        if (!password) {
+            throw new appError("You must choose a password!")
+        }
         if (admin_key && admin_key !== 'admin_key123') {
             throw new appError(`You don't have permission to create an admin account.`)
         }
