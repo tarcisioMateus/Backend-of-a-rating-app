@@ -43,20 +43,23 @@ class HistoryController {
     }
 
     async undo (request, response) {
-        const { id, admin_id } = request.params
+        const { admin_id, id } = request.params
 
         const history = await knex('history').where({id}).first()
         let cantUploadRatings
 
+        if (history.undo_id) return
+
         if (history.type.includes('Ratings')) {
             cantUploadRatings = await reUploadDeletedRatings (JSON.parse(history.data))
         }
-        if (history.type.includes('Users')) {
+        if (history.type.includes('User')) {
             cantUploadRatings = await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
         }
         if (history.type.includes('History')) return
 
-        await knex('history').insert({ user_id: admin_id, data: '', type: `reUploadHistory: ${id}` })
+        const undo_id = await knex('history').insert({ user_id: admin_id, data: '', type: `reUploadHistory: ${id}` })
+        await knex('history').where({id}).update({ undo_id })
 
         return response.json(cantUploadRatings)
     }
@@ -91,14 +94,14 @@ async function reUploadDeletedRatings (data) {
     for (let rt of data){
         if (users.filter(user => user.id == rt.user_id).length > 0){
             if(albums.filter(album => album.id == rt.album_id).length > 0){
-                const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
+                const {user_id, album_id, stars, review, created_at, updated_at} = rt
                 
-                await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+                await knex('ratings').insert({user_id, album_id, stars, review, created_at, updated_at})
 
                 if (!updatedAlbums.includes(album_id)) {
                     updatedAlbums = [...updatedAlbums, album_id]
                 }
-                return
+                continue
             }
         }
         cantUploadRatings = [...cantUploadRatings, rt]
@@ -108,9 +111,9 @@ async function reUploadDeletedRatings (data) {
 }
 
 async function reUploadDeletedUserWithItsRatings (data) {
-    const {id, admin_key, name, email, password, avatar, created_at, updated_at} = data.user
+    const {admin_key, name, email, password, avatar, created_at, updated_at} = data.user
     
-    await knex('users').insert({id, admin_key, name, email, password, avatar, created_at, updated_at})
+    const user_id = await knex('users').insert({admin_key, name, email, password, avatar, created_at, updated_at})
     
     const albums = await knex('albums')
     let updatedAlbums = []
@@ -118,14 +121,14 @@ async function reUploadDeletedUserWithItsRatings (data) {
     
     for (let rt of data.userRatings){
         if(albums.filter(album => album.id == rt.album_id).length > 0){
-            const {id, user_id, album_id, stars, review, created_at, updated_at} = rt
+            const {album_id, stars, review, created_at, updated_at} = rt
                 
-            await knex('ratings').insert({id, user_id, album_id, stars, review, created_at, updated_at})
+            await knex('ratings').insert({user_id, album_id, stars, review, created_at, updated_at})
 
             if (!updatedAlbums.includes(album_id)) {
                 updatedAlbums = [...updatedAlbums, album_id]
             }
-            return
+            continue
         }
         cantUploadRatings = [...cantUploadRatings, rt]
     }

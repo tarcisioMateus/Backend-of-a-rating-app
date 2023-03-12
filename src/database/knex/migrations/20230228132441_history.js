@@ -4,6 +4,7 @@ exports.up = knex => knex.schema.createTable('history', table => {
 
     table.text('type').notNullable()
     table.text('data').notNullable()
+    table.text('undo_id')
 
     table.timestamp('date_time').default(knex.fn.now())
 })
