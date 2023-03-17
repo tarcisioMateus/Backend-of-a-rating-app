@@ -48,7 +48,9 @@ class HistoryController {
         const history = await knex('history').where({id}).first()
         let cantUploadRatings
 
-        if (history.undo_id) return
+        if (history.undo_id) {
+            throw new appError(`This data have been already reUploaded!`)
+        }
 
         if (history.type.includes('Ratings')) {
             cantUploadRatings = await reUploadDeletedRatings (JSON.parse(history.data))
@@ -56,7 +58,9 @@ class HistoryController {
         if (history.type.includes('User')) {
             cantUploadRatings = await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
         }
-        if (history.type.includes('History')) return
+        if (history.type.includes('History')) {
+            throw new appError(`You can NOT reUpload a History file!`)
+        }
 
         const undo_id = await knex('history').insert({ user_id: admin_id, data: '', type: `reUploadHistory: ${id}` })
         await knex('history').where({id}).update({ undo_id })
