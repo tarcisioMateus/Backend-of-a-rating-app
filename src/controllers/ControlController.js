@@ -59,7 +59,7 @@ class ControlController {
         const { user_id } = request.body
         const { admin_id } = request.params
 
-        const history_id = await createHistoryOfDeletedUser ( user_id, admin_id )
+        const history_id = await createHistoryOfFlaggedUser ( user_id, admin_id )
 
         const albumsRatedByUser = (await knex('ratings').where({user_id})).map(rt => rt.album_id)
 

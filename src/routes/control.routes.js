@@ -6,8 +6,8 @@ const controlController = new ControlController()
 const controlRoutes = Router()
 
 controlRoutes.use('/activityDay', controlController.listActivityFromPreviousDays)
-controlRoutes.use('/deleteRtBelow/:admin_id', controlController.deleteRatingsBelow)
-controlRoutes.use('/deleteRTSince/:admin_id', controlController.deleteRatingsSince)
-controlRoutes.use('/deleteUser/:admin_id', controlController.deleteUser)
+controlRoutes.use('/flagRtBelow/:admin_id', controlController.flagRatingsBelow)
+controlRoutes.use('/flagRTSince/:admin_id', controlController.flagRatingsSince)
+controlRoutes.use('/flagUser/:admin_id', controlController.flagUser)
 
 module.exports = controlRoutes
