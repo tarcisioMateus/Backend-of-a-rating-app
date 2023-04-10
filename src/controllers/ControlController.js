@@ -13,7 +13,7 @@ class ControlController {
             throw new appError("You can't look beyond the previous 365 days!")
         }
         
-        const ratings = await knex('ratings')
+        const ratings = await knex('ratings').where({ is_flagged: null })
 
         const startingDate = getValidStartingDate (days)
         const recentActivity = ratings.filter( rt => activityAfterStartingDate (rt.updated_at, startingDate))
@@ -23,22 +23,20 @@ class ControlController {
         return response.json(AlbumsUsersActivity)
     }
 
-    async deleteRatingsBelow (request, response) {
+    async flagRatingsBelow (request, response) {
         const { album_id, singer, record_lable, threshold } = request.body
         const { admin_id } = request.params
 
-        const deletedDataAI = await deleteRatingsBelowAlbumId (album_id, threshold)
-        const deletedDataS = await deleteRatingsBelowSinger (singer, threshold)
-        const deletedDataRL = await deleteRatingsBelowRecordLable (record_lable, threshold)
+        const history_id = await createHistoryOfFlaggedRatingsBelow (admin_id, threshold, album_id, singer, record_lable)
 
-        const deletedData = { "AI": deletedDataAI, "S": deletedDataS, "RL": deletedDataRL }
-        const filter = { album_id, singer, record_lable }
-        await createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData)
+        await flagRatingsBelowAlbumId (album_id, threshold, history_id)
+        await flagRatingsBelowSinger (singer, threshold, history_id)
+        await flagRatingsBelowRecordLable (record_lable, threshold, history_id)
 
         return response.json()
     }
 
-    async deleteRatingsSince (request, response) {
+    async flagRatingsSince (request, response) {
         const { album_id, singer, record_lable, days } = request.body
         const { admin_id } = request.params
 
@@ -46,25 +44,27 @@ class ControlController {
             throw new appError("You can't look beyond the previous 365 days!")
         }
 
+        const history_id = await createHistoryOfFlaggedRatingsSince (admin_id, days, album_id, singer, record_lable)
+
         const startingDate = getValidStartingDate (days)
 
-        const deletedDataAI = await deleteRatingsSinceAlbumId (album_id, startingDate)
-        const deletedDataS = await deleteRatingsSinceSinger (singer, startingDate)
-        const deletedDataRL = await deleteRatingsSinceRecordLable (record_lable, startingDate)
-
-        const deletedData = { "AI": deletedDataAI, "S": deletedDataS, "RL": deletedDataRL }
-        const filter = { album_id, singer, record_lable }
-        await createHistoryOfDeletedRatingsSince (admin_id, days, filter, deletedData)
+        await flagRatingsSinceAlbumId (album_id, startingDate, history_id)
+        await flagRatingsSinceSinger (singer, startingDate, history_id)
+        await flagRatingsSinceRecordLable (record_lable, startingDate, history_id)
 
         return response.json()
     }
 
-    async deleteUser (request, response) {
+    async flagUser (request, response) {
         const { user_id } = request.body
         const { admin_id } = request.params
 
-        const albumsRatedByUser = await createHistoryOfDeletedUser ( user_id, admin_id )
-        await knex('users').where({id: user_id}).delete()
+        const history_id = await createHistoryOfDeletedUser ( user_id, admin_id )
+
+        const albumsRatedByUser = (await knex('ratings').where({user_id})).map(rt => rt.album_id)
+
+        await flagUserRatings (user_id, history_id)
+        await knex('users').where({id: user_id}).update({ is_flagged: history_id})
 
         await asyncForEach(albumsRatedByUser, updateAlbumAverageRating)
         return response.json()
@@ -173,7 +173,7 @@ async function getSingerRatings (singer) {
     let singerRatings = []
     
     for (let album of singerAlbums) {
-        const ratings = await knex('ratings').where({album_id: album.id})
+        const ratings = await knex('ratings').where({album_id: album.id, is_flagged: null})
         singerRatings = [...singerRatings, ...ratings]
     }
     return singerRatings
@@ -183,156 +183,138 @@ async function getRecordLableRatings (record_lable) {
     let rlRatings = []
     
     for (let album of rlAlbums) {
-        const ratings = await knex('ratings').where({album_id: album.id})
+        const ratings = await knex('ratings').where({album_id: album.id, is_flagged: null})
         rlRatings = [...rlRatings, ...ratings]
     }
     return rlRatings
 }
 
 
-async function deleteRatingsBelowAlbumId (album_id, threshold) {
-    let deletedData = []
+async function flagRatingsBelowAlbumId (album_id, threshold, history_id) {
     if (album_id) {
-        const albumsRatings = await knex ('ratings').where({album_id})
+        const albumsRatings = await knex ('ratings').where({album_id, is_flagged: null})
         for (let rt of albumsRatings) {
             if ( rt.stars <= threshold) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         await updateAlbumAverageRating(album_id)
-        return deletedData
     }
 }
-async function deleteRatingsBelowSinger (singer, threshold) {
-    let deletedData = []
+async function flagRatingsBelowSinger (singer, threshold, history_id) {
     if (singer) {
         const singerRatings = await getSingerRatings(singer)
         for (let rt of singerRatings) {
             if ( rt.stars <= threshold) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         const singerAlbums = (await knex('albums').where({singer})).map(album => album.id)
         await asyncForEach(singerAlbums, updateAlbumAverageRating)
-
-        return deletedData
     }
 }
-async function deleteRatingsBelowRecordLable (record_lable, threshold) {
-    let deletedData = []
+async function flagRatingsBelowRecordLable (record_lable, threshold, history_id) {
     if (record_lable) {
         const rlRatings = await getRecordLableRatings (record_lable)
         for (let rt of rlRatings) {
             if ( rt.stars <= threshold) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         const rlAlbums = (await knex('albums').where({record_lable})).map(album => album.id)
         await asyncForEach(rlAlbums, updateAlbumAverageRating)
-
-        return deletedData
     }
 }
 
 
 
-async function deleteRatingsSinceAlbumId (album_id, startingDate) {
-    let deletedData = []
+async function flagRatingsSinceAlbumId (album_id, startingDate, history_id) {
     if (album_id) {
-        const albumsRatings = await knex ('ratings').where({album_id})
+        const albumsRatings = await knex ('ratings').where({album_id, is_flagged: null})
         for (let rt of albumsRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         await updateAlbumAverageRating(album_id)
-        return deletedData
     }
 }
-async function deleteRatingsSinceSinger (singer, startingDate) {
-    let deletedData = []
+async function flagRatingsSinceSinger (singer, startingDate, history_id) {
     if (singer) {
         const singerRatings = await getSingerRatings(singer)
         for (let rt of singerRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         const singerAlbums = (await knex('albums').where({singer})).map(album => album.id)
         await asyncForEach(singerAlbums, updateAlbumAverageRating)
-        
-        return deletedData
     }
 }
-async function deleteRatingsSinceRecordLable (record_lable, startingDate) {
-    let deletedData = []
+async function flagRatingsSinceRecordLable (record_lable, startingDate, history_id) {
     if (record_lable) {
         const rlRatings = await getRecordLableRatings (record_lable)
         for (let rt of rlRatings) {
             if (activityAfterStartingDate (rt.updated_at, startingDate)) {
-                deletedData = [...deletedData, rt]
-                await knex ('ratings').where({id: rt.id}).delete()
+                await knex ('ratings').where({id: rt.id}).update({ is_flagged: history_id})
             }
         }
         const rlAlbums = (await knex('albums').where({record_lable})).map(album => album.id)
         await asyncForEach(rlAlbums, updateAlbumAverageRating)
-
-        return deletedData
     }
 }
 
 
 
-async function createHistoryOfDeletedRatingsBelow (admin_id, threshold, filter, deletedData) {
-    if (deletedData.AI) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.AI), type: `deleteRatingsBelow: ${threshold}, fromAlbumId: ${filter.album_id}`
+async function createHistoryOfFlaggedRatingsBelow (admin_id, threshold, album_id, singer, record_lable) {
+    if (album_id) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsBelow: ${threshold}, fromAlbumId: ${album_id}`
         })
+        return id
     }
-    if (deletedData.S) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.S), type: `deleteRatingsBelow: ${threshold}, fromSinger: ${filter.singer}`
+    if (singer) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsBelow: ${threshold}, fromSinger: ${singer}`
         })
+        return id
     }
-    if (deletedData.RL) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.RL), type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${filter.record_lable}`
+    if (record_lable) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsBelow: ${threshold}, fromRecordLable: ${record_lable}`
         })
-    }
-}
-
-async function createHistoryOfDeletedRatingsSince (admin_id, days, filter, deletedData) {
-    if (deletedData.AI) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.AI), type: `deleteRatingsSince: ${days}, fromAlbumId: ${filter.album_id}`
-        })
-    }
-    if (deletedData.S) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.S), type: `deleteRatingsSince: ${days}, fromSinger: ${filter.singer}`
-        })
-    }
-    if (deletedData.RL) {
-        await knex('history').insert({
-            user_id: admin_id, data: JSON.stringify(deletedData.RL), type: `deleteRatingsSince: ${days}, fromRecordLable: ${filter.record_lable}`
-        })
+        return id
     }
 }
 
+async function createHistoryOfFlaggedRatingsSince (admin_id, days, album_id, singer, record_lable) {
+    if (album_id) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsSince: ${days}, fromAlbumId: ${album_id}`
+        })
+        return id
+    }
+    if (singer) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsSince: ${days}, fromSinger: ${singer}`
+        })
+        return id
+    }
+    if (record_lable) {
+        const [id] = await knex('history').insert({
+            user_id: admin_id, type: `deleteRatingsSince: ${days}, fromRecordLable: ${record_lable}`
+        })
+        return id
+    }
+}
 
-async function createHistoryOfDeletedUser ( user_id, admin_id ) {
-    const user = await knex('users').where({id: user_id}).first()
 
-    const userRatings = await knex('ratings').where({user_id})
+async function createHistoryOfFlaggedUser ( user_id, admin_id ) {
+    const [id] = await knex('history').insert({ user_id: admin_id, type: `deleteUser: ${user_id}` })
 
-    const data = JSON.stringify({user, userRatings})
-    await knex('history').insert({ user_id: admin_id, data, type: `deleteUser: ${user_id}` })
+    return id
+}
 
-    const albumsRatedByUser = userRatings.map(rt => rt.album_id)
-    return albumsRatedByUser
+async function flagUserRatings (user_id, history_id) {
+    await knex('ratings').where({user_id}).update({is_flagged: history_id})
 }

@@ -1,7 +1,7 @@
 const knex = require('../../database/knex')
 
 async function updateAlbumAverageRating (album_id) {
-    const albumRatings = (await knex('ratings').where({album_id})).map(rating => Number(rating.stars))
+    const albumRatings = (await knex('ratings').where({album_id, is_flagged: null})).map(rating => Number(rating.stars))
 
     let averageRating = ''
     if (albumRatings.length > 0) {
