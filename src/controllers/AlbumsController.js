@@ -93,6 +93,7 @@ async function showAlbumWithItsRatings (album) {
         'ratings.review',
         'ratings.updated_at',
     ]).where('ratings.album_id', album.id)
+    .where('ratings.is_flagged', null)
     .innerJoin('users', 'users.id', 'ratings.user_id')
     .orderBy('ratings.updated_at')
 
