@@ -5,9 +5,9 @@ const historyController = new HistoryController()
 
 const historyRoutes = Router()
 
-historyRoutes.use('/index/:admin_id', historyController.index)
-historyRoutes.use('/show/:id', historyController.show)
-historyRoutes.use('/undo/:admin_id/:id', historyController.undo)
-historyRoutes.use('/delete/:admin_id', historyController.delete)
+historyRoutes.get('/index/:admin_id', historyController.index)
+historyRoutes.get('/show/:id', historyController.show)
+historyRoutes.put('/undo/:admin_id/:id', historyController.undo)
+historyRoutes.delete('/delete/:admin_id', historyController.delete)
 
 module.exports = historyRoutes
