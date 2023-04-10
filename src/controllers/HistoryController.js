@@ -38,34 +38,56 @@ class HistoryController {
         const { id } = request.params
 
         const history = await knex('history').where({id}).first()
+        
+        if (history.type.includes('blocked')) {
+            return response.json({
+                ...history,
+                users: (await knex('users').where({is_flagged: history.id}))
+            })
+        }
 
-        return response.json(history)
+        let ratings, user
+        if (history.type.includes('User')) user = await knex('users').where({is_flagged: id}).first()
+            
+        ratings = await knex('ratings').where({is_flagged: id})
+
+        if (user) {
+            return response.json({
+                ...history,
+                user,
+                ratings
+            })
+        }
+        return response.json({
+            ...history,
+            ratings
+        })
     }
 
     async undo (request, response) {
         const { admin_id, id } = request.params
 
         const history = await knex('history').where({id}).first()
-        let cantUploadRatings
 
         if (history.undo_id) {
             throw new appError(`This data have been already reUploaded!`)
         }
 
         if (history.type.includes('Ratings')) {
-            cantUploadRatings = await reUploadDeletedRatings (JSON.parse(history.data))
+            await unflagRatings (id)
         }
         if (history.type.includes('User')) {
-            cantUploadRatings = await reUploadDeletedUserWithItsRatings (JSON.parse(history.data))
+            await knex('Users').where({ is_flagged: id}).update({ is_flagged: null})
+            await unflagRatings (id)
         }
         if (history.type.includes('History')) {
             throw new appError(`You can NOT reUpload a History file!`)
         }
 
-        const undo_id = await knex('history').insert({ user_id: admin_id, data: '', type: `reUploadHistory: ${id}` })
+        const undo_id = await knex('history').insert({ user_id: admin_id, type: `reUploadHistory: ${id}` })
         await knex('history').where({id}).update({ undo_id })
 
-        return response.json(cantUploadRatings)
+        return response.json()
     }
     
     async delete (request, response) {
@@ -81,7 +103,19 @@ class HistoryController {
         const allDeleteHistoryRequest = await knex('history').where({type: 'deleteHistory'})
 
         if (allAdmin.length == allDeleteHistoryRequest.length) {
+            const historys = (await knex('history')).map( h => h.id)
+            
+            let blockedUsers
+            for (let h of historys){
+                await knex('ratings').where({is_flagged: h.id}).delete()
+                if (h.type.includes('blocked')) {
+                    blockedUsers = [...blockedUsers, ...( ( await knex('users').where({is_flagged: h.id}) ).map( user => user.id ) )]
+                } else if (h.type.includes('User')) {
+                    blockedUsers = [...blockedUsers, ( await knex('users').where({is_flagged: h.id}).first() ).id]
+                }
+            }
             await knex('history').delete()
+            await createHistory4BlockedUsers (blockedUsers)
         }
         return response.json()
     }
@@ -89,53 +123,28 @@ class HistoryController {
 
 module.exports = HistoryController
 
-async function reUploadDeletedRatings (data) {
-    const users = await knex('users')
-    const albums = await knex('albums')
-    let updatedAlbums = []
-    let cantUploadRatings = []
-    
-    for (let rt of data){
-        if (users.filter(user => user.id == rt.user_id).length > 0){
-            if(albums.filter(album => album.id == rt.album_id).length > 0){
-                const {user_id, album_id, stars, review, created_at, updated_at} = rt
-                
-                await knex('ratings').insert({user_id, album_id, stars, review, created_at, updated_at})
-
-                if (!updatedAlbums.includes(album_id)) {
-                    updatedAlbums = [...updatedAlbums, album_id]
-                }
-                continue
-            }
+async function getChangedAlbums (id) {
+    const ratings = await knex('ratings').where({is_flagged: id})
+    let albums = []
+    for (let rt of ratings) {
+        if (!albums.includes(rt.album_id)) {
+            albums = [...albums, rt.album_id]
         }
-        cantUploadRatings = [...cantUploadRatings, rt]
     }
-    await asyncForEach(updatedAlbums, updateAlbumAverageRating)
-    return cantUploadRatings
+    return albums
 }
 
-async function reUploadDeletedUserWithItsRatings (data) {
-    const {admin_key, name, email, password, avatar, created_at, updated_at} = data.user
-    
-    const user_id = await knex('users').insert({admin_key, name, email, password, avatar, created_at, updated_at})
-    
-    const albums = await knex('albums')
-    let updatedAlbums = []
-    let cantUploadRatings = []
-    
-    for (let rt of data.userRatings){
-        if(albums.filter(album => album.id == rt.album_id).length > 0){
-            const {album_id, stars, review, created_at, updated_at} = rt
-                
-            await knex('ratings').insert({user_id, album_id, stars, review, created_at, updated_at})
+async function unflagRatings (id) {
+    const changedAlbums = await getChangedAlbums (id)
+    await knex('ratings').where({ is_flagged: id}).update({ is_flagged: null})
 
-            if (!updatedAlbums.includes(album_id)) {
-                updatedAlbums = [...updatedAlbums, album_id]
-            }
-            continue
-        }
-        cantUploadRatings = [...cantUploadRatings, rt]
+    await asyncForEach(changedAlbums, updateAlbumAverageRating)
+}
+
+async function createHistory4BlockedUsers (usersId) {
+    const [id] = await knex('history').insert({ user_id: 0, type: `blockedHistory: ---` })
+
+    for (let user_id of usersId){
+        await knex('users').where({ id: user_id }).update({is_flagged: id})
     }
-    await asyncForEach(updatedAlbums, updateAlbumAverageRating)
-    return cantUploadRatings
 }
