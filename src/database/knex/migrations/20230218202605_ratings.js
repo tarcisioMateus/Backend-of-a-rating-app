@@ -7,6 +7,8 @@ exports.up = knex => knex.schema.createTable('ratings', table => {
     table.integer('stars').notNullable()
     table.text('review').notNullable()
 
+    table.integer('is_flagged')
+
     table.timestamp('created_at').default(knex.fn.now())
     table.timestamp('updated_at').default(knex.fn.now())
 })
