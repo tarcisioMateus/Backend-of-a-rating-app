@@ -40,6 +40,10 @@ class AccountController {
             throw new appError("The email and password don't match!")
         }
 
+        if (user.is_flagged) {
+            throw new appError("Your account has been suspended!")
+        }
+
         return response.json(user)
     }
 }
