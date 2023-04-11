@@ -96,26 +96,27 @@ class HistoryController {
         const deleteHistoryRequest = await knex('history').where({user_id: admin_id}).where({type: 'deleteHistory'}).first()
 
         if (!deleteHistoryRequest) {
-            await knex('history').insert({ user_id: admin_id, data: '', type: 'deleteHistory' })
+            await knex('history').insert({ user_id: admin_id, type: 'deleteHistory' })
         }
 
         const allAdmin = await knex('users').where({admin_key: 'admin_key123'})
         const allDeleteHistoryRequest = await knex('history').where({type: 'deleteHistory'})
 
         if (allAdmin.length == allDeleteHistoryRequest.length) {
-            const historys = (await knex('history')).map( h => h.id)
+            const historys = await knex('history')
             
-            let blockedUsers
+            let blockedUsers = []
             for (let h of historys){
                 await knex('ratings').where({is_flagged: h.id}).delete()
                 if (h.type.includes('blocked')) {
                     blockedUsers = [...blockedUsers, ...( ( await knex('users').where({is_flagged: h.id}) ).map( user => user.id ) )]
                 } else if (h.type.includes('User')) {
-                    blockedUsers = [...blockedUsers, ( await knex('users').where({is_flagged: h.id}).first() ).id]
+                    const user = await knex('users').where({is_flagged: h.id}).first()
+                    if ( user ) blockedUsers = [...blockedUsers, user.id]
                 }
             }
             await knex('history').delete()
-            await createHistory4BlockedUsers (blockedUsers)
+            await createHistory4BlockedUsers (blockedUsers, admin_id)
         }
         return response.json()
     }
@@ -141,8 +142,8 @@ async function unflagRatings (id) {
     await asyncForEach(changedAlbums, updateAlbumAverageRating)
 }
 
-async function createHistory4BlockedUsers (usersId) {
-    const [id] = await knex('history').insert({ user_id: 0, type: `blockedHistory: ---` })
+async function createHistory4BlockedUsers (usersId, admin_id) {
+    const [id] = await knex('history').insert({ user_id: admin_id, type: `blockedHistory: ---` })
 
     for (let user_id of usersId){
         await knex('users').where({ id: user_id }).update({is_flagged: id})
